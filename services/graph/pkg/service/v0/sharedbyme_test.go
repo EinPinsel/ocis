@@ -532,5 +532,72 @@ var _ = Describe("sharedbyme", func() {
 			Expect(link.GetWebUrl()).To(Equal("https://localhost:9200/s/" + publicShare.GetToken()))
 		})
 
+		It("returns a proper driveItem when the same resource is shared both with users and via link", func() {
+			emptyListSharesMock()
+
+			// Create a user share and a public share that point to the exact same resource id.
+			mixedResourceID := &provider.ResourceId{
+				StorageId: "storageid",
+				SpaceId:   "spaceid",
+				OpaqueId:  "mixed-opaqueid",
+			}
+
+			userMixedShare := userShare
+			userMixedShare.ResourceId = mixedResourceID
+
+			publicMixedShare := publicShare
+			publicMixedShare.ResourceId = mixedResourceID
+
+			// Mock Stat for the new resource id (executed twice by the different listing functions)
+			gatewayClient.On("Stat",
+				mock.Anything,
+				mock.MatchedBy(
+					func(req *provider.StatRequest) bool {
+						return req.Ref.ResourceId.OpaqueId == mixedResourceID.OpaqueId
+					}),
+			).Return(&provider.StatResponse{
+				Status: status.NewOK(ctx),
+				Info: &provider.ResourceInfo{
+					Id:   mixedResourceID,
+					Type: provider.ResourceType_RESOURCE_TYPE_CONTAINER,
+				},
+			}, nil)
+
+			// Mock ListShares returning the user share.
+			gatewayClient.On("ListShares", mock.Anything, mock.Anything).Return(
+				&collaboration.ListSharesResponse{
+					Status: status.NewOK(ctx),
+					Shares: []*collaboration.Share{
+						&userMixedShare,
+					},
+				}, nil,
+			)
+
+			// Mock ListPublicShares returning the public share.
+			gatewayClient.On("ListPublicShares", mock.Anything, mock.Anything).Return(
+				&link.ListPublicSharesResponse{
+					Status: status.NewOK(ctx),
+					Share: []*link.PublicShare{
+						&publicMixedShare,
+					},
+				}, nil,
+			)
+
+			r := httptest.NewRequest(http.MethodGet, "/graph/v1.0/me/drives/sharedByMe", nil)
+			svc.GetSharedByMe(rr, r)
+			Expect(rr.Code).To(Equal(http.StatusOK))
+
+			data, err := io.ReadAll(rr.Body)
+			Expect(err).ToNot(HaveOccurred())
+
+			res := itemsList{}
+			err = json.Unmarshal(data, &res)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(len(res.Value)).To(Equal(1))
+			di := res.Value[0]
+			Expect(di.GetId()).To(Equal(storagespace.FormatResourceID(mixedResourceID)))
+			Expect(len(di.GetPermissions())).To(Equal(2))
+		})
 	})
 })
