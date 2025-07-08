@@ -3244,4 +3244,21 @@ class GraphContext implements Context {
 		);
 		$this->featureContext->setResponse($response);
 	}
+
+	/**
+	 * @When user :user lists all activities using the Graph API without specifying any resourceId
+	 *
+	 * @param string $user
+	 *
+	 * @return void
+	 * @throws GuzzleException
+	 */
+	public function userListsAllActivitiesUsingTheGraphApiWithoutResourceId(string $user): void {
+		$response = GraphHelper::getActivities(
+			$this->featureContext->getBaseUrl(),
+			$user,
+			$this->featureContext->getPasswordForUser($user),
+		);
+		$this->featureContext->setResponse($response);
+	}
 }

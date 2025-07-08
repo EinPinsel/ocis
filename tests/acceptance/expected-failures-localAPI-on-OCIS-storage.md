@@ -397,5 +397,9 @@ The expected failures in this file are from features in the owncloud/ocis repo.
 
 - [apiActivities/activities.feature:3552](https://github.com/owncloud/ocis/blob/master/tests/acceptance/features/apiActivities/activities.feature#L3552)
 
+#### [Query the activity endpoint without an itemid filter doesn't return any results](https://github.com/owncloud/ocis/issues/10153)
+
+- [apiActivities/activities.feature:3655](https://github.com/owncloud/ocis/blob/master/tests/acceptance/features/apiActivities/activities.feature#L3655)
+
 Note: always have an empty line at the end of this file.
 The bash script that processes this file requires that the last line has a newline on the end.
